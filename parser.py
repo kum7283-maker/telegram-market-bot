@@ -2,36 +2,41 @@ import requests
 import random
 
 
-ARTICLES = [
-    "183126859",
-    "145774392",
-    "219739888"
-]
-
-
 def get_product():
 
-    article = random.choice(ARTICLES)
+    categories = [
+        "elektronika",
+        "dom",
+        "krasota",
+        "sport",
+        "odezhda",
+        "avto"
+    ]
 
-    url = f"https://card.wb.ru/cards/v2/detail"
+    category = random.choice(categories)
+
+    url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
 
     params = {
+        "query": category,
+        "resultset": "catalog",
+        "page": 1,
         "appType": 1,
         "curr": "rub",
-        "dest": -1257786,
-        "nm": article
+        "dest": -1257786
     }
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "*/*",
-        "Accept-Language": "ru-RU,ru;q=0.9"
+        "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept":
+        "application/json"
     }
 
 
     try:
 
-        r = requests.get(
+        response = requests.get(
             url,
             params=params,
             headers=headers,
@@ -39,102 +44,152 @@ def get_product():
         )
 
 
-        print("STATUS:", r.status_code)
-        print("TEXT:", r.text[:300])
-
-
-        if not r.text:
-
-            raise Exception("WB вернул пустой ответ")
-
-
-        if not r.text.startswith("{"):
-
+        if response.status_code != 200:
             raise Exception(
-                "WB вернул не JSON: " + r.text[:50]
+                f"WB ошибка {response.status_code}"
             )
 
 
-        data = r.json()
+        data = response.json()
 
 
-        products = (
-            data
-            .get("data", {})
-            .get("products", [])
+        products = data.get(
+            "data",
+            {}
+        ).get(
+            "products",
+            []
         )
 
 
         if not products:
-
             raise Exception(
-                "Карточка не найдена"
+                "Товары не найдены"
             )
 
 
-        p = products[0]
+        product = random.choice(products)
+
+
+        article = product.get(
+            "id"
+        )
+
+
+        price = product.get(
+            "salePriceU",
+            0
+        ) // 100
+
+
+        old_price = product.get(
+            "priceU",
+            0
+        ) // 100
+
+
+        discount = 0
+
+        if old_price:
+            discount = round(
+                100 - (price / old_price * 100)
+            )
+
+
+        image = (
+            f"https://basket-{article//100000}.wbbasket.ru/"
+            f"vol{article//100000}/part{article//1000}/"
+            f"{article}/images/big/1.webp"
+        )
 
 
         return {
 
-            "market": "🟣 Wildberries",
+            "market":
+            "🟣 Wildberries",
 
-            "article": article,
+            "article":
+            article,
 
-            "name": p.get(
+            "name":
+            product.get(
                 "name",
                 "Без названия"
             ),
 
-            "price": "0 ₽",
+            "price":
+            f"{price} ₽",
 
-            "old_price": "0 ₽",
+            "old_price":
+            f"{old_price} ₽",
 
-            "discount": "0%",
+            "discount":
+            f"{discount}%",
 
-            "rating": str(
-                p.get("rating",0)
+            "rating":
+            str(
+                product.get(
+                    "rating",
+                    0
+                )
             ),
 
-            "reviews": str(
-                p.get("feedbacks",0)
+            "reviews":
+            str(
+                product.get(
+                    "feedbacks",
+                    0
+                )
             ),
 
             "link":
             f"https://www.wildberries.ru/catalog/{article}/detail.aspx",
 
-            "image": None,
+            "image":
+            image,
 
-            "video": None
+            "video":
+            None
+
         }
 
 
     except Exception as e:
 
-        print("ERROR:", e)
+        print("PARSER ERROR:", e)
 
         return {
 
-            "market": "🟣 Wildberries",
+            "market":
+            "🟣 Wildberries",
 
-            "article": article,
+            "article":
+            "0",
 
-            "name": f"Ошибка: {e}",
+            "name":
+            f"Ошибка: {e}",
 
-            "price": "0 ₽",
+            "price":
+            "0 ₽",
 
-            "old_price": "0 ₽",
+            "old_price":
+            "0 ₽",
 
-            "discount": "0%",
+            "discount":
+            "0%",
 
-            "rating": "0",
+            "rating":
+            "0",
 
-            "reviews": "0",
+            "reviews":
+            "0",
 
             "link":
             "https://www.wildberries.ru",
 
-            "image": None,
+            "image":
+            None,
 
-            "video": None
+            "video":
+            None
         }
