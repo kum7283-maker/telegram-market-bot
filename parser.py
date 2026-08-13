@@ -16,6 +16,7 @@ def get_product():
             "link": "https://www.wildberries.ru"
         },
 
+
         {
             "market": "🟡 Ozon",
             "name": "Беспроводные наушники Bluetooth",
@@ -27,6 +28,7 @@ def get_product():
             "link": "https://www.ozon.ru"
         },
 
+
         {
             "market": "🟣 Wildberries",
             "name": "Умные часы Smart Watch",
@@ -36,8 +38,21 @@ def get_product():
             "rating": "4.7",
             "reviews": "5400",
             "link": "https://www.wildberries.ru"
+        },
+
+
+        {
+            "market": "🟡 Ozon",
+            "name": "Органайзер для кухни",
+            "price": "690 ₽",
+            "old_price": "1490 ₽",
+            "discount": "54%",
+            "rating": "4.8",
+            "reviews": "8700",
+            "link": "https://www.ozon.ru"
         }
 
     ]
+
 
     return random.choice(products)
