@@ -8,17 +8,15 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import Message
 from aiogram.filters import Command
 
-from parser import get_wb_products
+from parser import get_products
 
-
-# =====================
-# НАСТРОЙКИ
-# =====================
 
 load_dotenv()
 
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")
+CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 
 if not BOT_TOKEN:
@@ -32,48 +30,37 @@ if not OWNER_ID:
 OWNER_ID = int(OWNER_ID)
 
 
-# =====================
-# БОТ
-# =====================
-
 bot = Bot(
     token=BOT_TOKEN
 )
 
+
 dp = Dispatcher()
 
 
-# =====================
-# ПРОВЕРКА ВЛАДЕЛЬЦА
-# =====================
 
-def is_owner(message: Message):
+def is_owner(message):
     return message.from_user.id == OWNER_ID
 
 
-
-# =====================
-# START
-# =====================
 
 @dp.message(Command("start"))
 async def start(message: Message):
 
     if not is_owner(message):
         await message.answer(
-            "⛔ Доступ к панели есть только у владельца."
+            "⛔ Доступ только для владельца"
         )
         return
 
 
     await message.answer(
-        """
-🤖 WB × OZON НАХОДКИ — панель управления
-
+"""
+🤖 WB × OZON НАХОДКИ
 
 Команды:
 
-/test — проверка бота
+/test — проверка
 /status — состояние
 /post — публикация товара
 /help — помощь
@@ -82,32 +69,23 @@ async def start(message: Message):
 
 
 
-# =====================
-# HELP
-# =====================
-
 @dp.message(Command("help"))
 async def help_cmd(message: Message):
 
     if not is_owner(message):
         return
 
-
     await message.answer(
-        """
-📌 Управление ботом:
+"""
+📌 Команды:
 
-/test — тест
-/status — статус
-/post — найти товар
+/test
+/status
+/post
 """
     )
 
 
-
-# =====================
-# TEST
-# =====================
 
 @dp.message(Command("test"))
 async def test(message: Message):
@@ -122,10 +100,6 @@ async def test(message: Message):
 
 
 
-# =====================
-# STATUS
-# =====================
-
 @dp.message(Command("status"))
 async def status(message: Message):
 
@@ -134,20 +108,16 @@ async def status(message: Message):
 
 
     await message.answer(
-        """
+"""
 🟢 Статус:
 
 Бот запущен
-Парсер WB подключен
-AI модуль готов
+WB подключен
+Ozon подключен
 """
     )
 
 
-
-# =====================
-# POST
-# =====================
 
 @dp.message(Command("post"))
 async def post(message: Message):
@@ -156,53 +126,50 @@ async def post(message: Message):
         return
 
 
-    product = get_wb_products()
+    product = get_products()
 
 
     text = f"""
 🔥 НАХОДКА ДНЯ
 
 
-🛒 {product['name']}
-
-
-🏪 Маркетплейс:
 {product['market']}
+
+
+😍 {product['name']}
 
 
 💰 Цена:
 {product['price']}
 
-❌ Старая цена:
+
+❌ Было:
 {product['old_price']}
+
+
+📉 Скидка:
+{product['discount']}
 
 
 ⭐ Рейтинг:
 {product['rating']}
 
+
 💬 Отзывов:
 {product['reviews']}
 
 
-📂 Категория:
-{product['category']}
+🛒 Забрать находку:
+{product['link']}
 
 
-🔗 Ссылка:
-{product['url']}
-
-
-#находка #WB #OZON
+#находки #скидки #WB #OZON
 """
 
 
     await message.answer(text)
 
 
-
-# =====================
-# ЗАПУСК
-# =====================
 
 async def main():
 
@@ -219,5 +186,4 @@ async def main():
 
 
 if __name__ == "__main__":
-
     asyncio.run(main())
