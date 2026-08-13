@@ -2,7 +2,6 @@ import requests
 import random
 
 
-# Категории WB
 CATEGORIES = [
     "товары для дома",
     "электроника",
@@ -16,7 +15,9 @@ def get_product():
 
     category = random.choice(CATEGORIES)
 
+
     url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
+
 
     params = {
         "query": category,
@@ -27,8 +28,7 @@ def get_product():
 
 
     headers = {
-        "User-Agent":
-        "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0"
     }
 
 
@@ -38,7 +38,7 @@ def get_product():
             url,
             params=params,
             headers=headers,
-            timeout=10
+            timeout=15
         )
 
 
@@ -48,8 +48,11 @@ def get_product():
         products = data["data"]["products"]
 
 
-        # выбираем случайный товар
+        # выбираем товар
         product = random.choice(products)
+
+
+        article = product["id"]
 
 
         name = product.get(
@@ -70,62 +73,110 @@ def get_product():
         ) // 100
 
 
-        discount = 0
-
-        if old_price > 0:
+        if old_price and price:
 
             discount = round(
                 (1 - price / old_price) * 100
             )
 
+        else:
 
-        article = product.get(
-            "id"
-        )
+            discount = 0
 
+
+
+        # ссылка товара
 
         link = (
-            f"https://www.wildberries.ru/catalog/{article}/detail.aspx"
+            f"https://www.wildberries.ru/catalog/"
+            f"{article}/detail.aspx"
         )
 
 
-        # фото
+
+        # данные для картинки
+
+        vol = article // 100000
+
+        part = article // 1000
+
+
+        basket = product.get(
+            "basket",
+            "01"
+        )
+
+
         image = (
-            f"https://basket-{product.get('basket')}.wbbasket.ru/"
-            f"vol{article//100000}/part{article//1000}/"
+            f"https://basket-{basket}.wbbasket.ru/"
+            f"vol{vol}/part{part}/"
             f"{article}/images/big/1.webp"
         )
 
 
+
+        # видео WB часто отсутствует
+
+        video = None
+
+
+
         return {
 
-            "market": "🟣 Wildberries",
 
-            "name": name,
+            "market":
+            "🟣 Wildberries",
 
-            "price": f"{price} ₽",
 
-            "old_price": f"{old_price} ₽",
+            "article":
+            str(article),
 
-            "discount": f"{discount}%",
 
-            "rating": str(
+            "name":
+            name,
+
+
+            "price":
+            f"{price} ₽",
+
+
+            "old_price":
+            f"{old_price} ₽",
+
+
+            "discount":
+            f"{discount}%",
+
+
+            "rating":
+            str(
                 product.get(
                     "rating",
                     "Нет"
                 )
             ),
 
-            "reviews": str(
+
+            "reviews":
+            str(
                 product.get(
                     "feedbacks",
                     0
                 )
             ),
 
-            "link": link,
 
-            "image": image
+            "link":
+            link,
+
+
+            "image":
+            image,
+
+
+            "video":
+            video
+
         }
 
 
@@ -134,29 +185,55 @@ def get_product():
 
 
         print(
-            "WB ERROR:",
+            "PARSER ERROR:",
             e
         )
 
 
-        # запасной вариант
         return {
 
-            "market": "🟣 Wildberries",
 
-            "name": "Популярный товар дня",
+            "market":
+            "🟣 Wildberries",
 
-            "price": "999 ₽",
 
-            "old_price": "1999 ₽",
+            "article":
+            "нет",
 
-            "discount": "50%",
 
-            "rating": "4.8",
+            "name":
+            "Популярный товар",
 
-            "reviews": "5000",
 
-            "link": "https://www.wildberries.ru",
+            "price":
+            "999 ₽",
 
-            "image": None
+
+            "old_price":
+            "1999 ₽",
+
+
+            "discount":
+            "50%",
+
+
+            "rating":
+            "4.8",
+
+
+            "reviews":
+            "5000",
+
+
+            "link":
+            "https://www.wildberries.ru",
+
+
+            "image":
+            None,
+
+
+            "video":
+            None
+
         }
