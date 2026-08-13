@@ -1,37 +1,38 @@
 def generate_post(product):
 
-    title = product.get("title", "Интересный товар")
-    price = product.get("price", "Нет цены")
-    old_price = product.get("old_price", "")
-    link = product.get("link", "")
+    name = product["name"]
+    price = product["price"]
+    old = product["old_price"]
+    discount = product["discount"]
+    rating = product["rating"]
+    reviews = product["reviews"]
+    link = product["link"]
+    market = product["market"]
 
-    discount = ""
-
-    try:
-        if old_price and int(old_price) > int(price):
-            discount = int((1 - int(price) / int(old_price)) * 100)
-    except:
-        pass
 
     text = f"""
+
 🔥 НАХОДКА ДНЯ
 
-🛒 {title}
+{market}
 
-💰 Цена: {price} ₽
-"""
+😍 {name}
 
-    if old_price:
-        text += f"❌ Было: {old_price} ₽\n"
+💰 Было: {old}
+🔥 Сейчас: {price}
 
-    if discount:
-        text += f"📉 Скидка: {discount}%\n"
+📉 Скидка: {discount}
 
-    text += f"""
-🔗 Купить:
+⭐ Рейтинг: {rating}
+💬 Отзывов: {reviews}
+
+🛒 Забрать находку:
 {link}
 
-#wb #ozon #находки
+
+#находки #скидки #ozon #wildberries
+
 """
 
-    return text
+
+    return text.strip()
