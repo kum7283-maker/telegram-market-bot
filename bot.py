@@ -1,5 +1,6 @@
 import os
 import logging
+
 from dotenv import load_dotenv
 
 from telegram import Update
@@ -9,7 +10,7 @@ from telegram.ext import (
     ContextTypes
 )
 
-from products import get_products
+from parser import get_product
 from ai_writer import generate_post
 from db import init_db, save_post
 
@@ -29,10 +30,10 @@ logging.basicConfig(
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🤖 WB × OZON БОТ\n\n"
-        "/post — новая находка\n"
-        "/test — тест\n"
-        "/status — статус"
+        "🤖 WB × OZON НАХОДКИ\n\n"
+        "/test — тестовая публикация\n"
+        "/post — отправить находку\n"
+        "/status — состояние"
     )
 
 
@@ -43,9 +44,19 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    product = get_product()
+
+    text = generate_post(product)
+
+    await update.message.reply_text(text)
+
+
+
 async def post(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    product = get_products()
+    product = get_product()
 
     text = generate_post(product)
 
@@ -65,16 +76,6 @@ async def post(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    product = get_products()
-
-    text = generate_post(product)
-
-    await update.message.reply_text(text)
-
-
-
 def main():
 
     init_db()
@@ -90,11 +91,11 @@ def main():
     )
 
     app.add_handler(
-        CommandHandler("post", post)
+        CommandHandler("test", test)
     )
 
     app.add_handler(
-        CommandHandler("test", test)
+        CommandHandler("post", post)
     )
 
     app.add_handler(
