@@ -1,34 +1,37 @@
-import random
-
 def generate_post(product):
-    title = product.get("title", "Товар с Wildberries и Ozon")
-    price = product.get("price", "999")
-    old_price = product.get("old_price", "1999")
-    link = product.get("link", "https://www.wildberries.ru")
 
-    discount = 0
+    title = product.get("title", "Интересный товар")
+    price = product.get("price", "Нет цены")
+    old_price = product.get("old_price", "")
+    link = product.get("link", "")
+
+    discount = ""
+
     try:
-        discount = int((1 - int(price) / int(old_price)) * 100)
+        if old_price and int(old_price) > int(price):
+            discount = int((1 - int(price) / int(old_price)) * 100)
     except:
         pass
 
-    texts = [
-        "🔥 Нашли выгодную цену!",
-        "😍 Товар дня!",
-        "⚡ Отличная находка с маркетплейса!"
-    ]
+    text = f"""
+🔥 НАХОДКА ДНЯ
 
-    return f"""
-{random.choice(texts)}
+🛒 {title}
 
-🛍 {title}
+💰 Цена: {price} ₽
+"""
 
-💰 Цена сейчас: {price} ₽
-📉 Старая цена: {old_price} ₽
-🔥 Скидка: {discount}%
+    if old_price:
+        text += f"❌ Было: {old_price} ₽\n"
 
-🛒 Купить:
+    if discount:
+        text += f"📉 Скидка: {discount}%\n"
+
+    text += f"""
+🔗 Купить:
 {link}
 
-#ozon #wildberries #находки #скидки
+#wb #ozon #находки
 """
+
+    return text
