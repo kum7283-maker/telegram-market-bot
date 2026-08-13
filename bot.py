@@ -20,12 +20,11 @@ logging.basicConfig(
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
-ADMIN_ID = os.getenv("ADMIN_ID")
 
 
-# =========================
-# Команда /start
-# =========================
+# ==========================
+# Старт
+# ==========================
 
 async def start(
     update: Update,
@@ -33,16 +32,31 @@ async def start(
 ):
 
     await update.message.reply_text(
-        "🤖 WB & Ozon Market Bot запущен\n\n"
-        "/post — создать пост\n"
-        "/test — проверить канал\n"
+        "🤖 WB × OZON НАХОДКИ\n\n"
+        "/post — опубликовать находку\n"
+        "/test — тест канала\n"
         "/status — статус"
     )
 
 
-# =========================
-# Тест отправки в канал
-# =========================
+# ==========================
+# Статус
+# ==========================
+
+async def status(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    await update.message.reply_text(
+        "🟢 Бот работает\n"
+        f"Канал: {CHANNEL_ID}"
+    )
+
+
+# ==========================
+# Тест отправки
+# ==========================
 
 async def test(
     update: Update,
@@ -51,17 +65,18 @@ async def test(
 
     await context.bot.send_message(
         chat_id=CHANNEL_ID,
-        text="✅ Тестовое сообщение от бота"
+        text="✅ Тестовая публикация работает"
     )
+
 
     await update.message.reply_text(
-        "Тест отправлен в канал"
+        "✅ Проверка отправлена в канал"
     )
 
 
-# =========================
-# Создание поста
-# =========================
+# ==========================
+# Ручной пост
+# ==========================
 
 async def post(
     update: Update,
@@ -75,19 +90,17 @@ async def post(
         text = generate_post(product)
 
 
-        # отправка именно в канал
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
             text=text
         )
 
 
-        # сохранение в базу
         save_post(text)
 
 
         await update.message.reply_text(
-            "✅ Пост опубликован в канал"
+            "🔥 Находка опубликована"
         )
 
 
@@ -96,28 +109,49 @@ async def post(
         logging.error(e)
 
         await update.message.reply_text(
-            f"❌ Ошибка:\n{e}"
+            f"Ошибка: {e}"
         )
 
 
-# =========================
-# Статус
-# =========================
+# ==========================
+# Автоматическая публикация
+# ==========================
 
-async def status(
-    update: Update,
+async def auto_post(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-    await update.message.reply_text(
-        "🟢 Бот работает\n"
-        f"Канал: {CHANNEL_ID}"
-    )
+    try:
+
+        product = get_product()
+
+        text = generate_post(product)
 
 
-# =========================
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=text
+        )
+
+
+        save_post(text)
+
+
+        logging.info(
+            "Автопост опубликован"
+        )
+
+
+    except Exception as e:
+
+        logging.error(
+            f"Auto post error: {e}"
+        )
+
+
+# ==========================
 # Запуск
-# =========================
+# ==========================
 
 def main():
 
@@ -142,6 +176,14 @@ def main():
 
     app.add_handler(
         CommandHandler(
+            "status",
+            status
+        )
+    )
+
+
+    app.add_handler(
+        CommandHandler(
             "test",
             test
         )
@@ -156,11 +198,11 @@ def main():
     )
 
 
-    app.add_handler(
-        CommandHandler(
-            "status",
-            status
-        )
+    # Автопост каждые 2 часа
+    app.job_queue.run_repeating(
+        auto_post,
+        interval=7200,
+        first=30
     )
 
 
