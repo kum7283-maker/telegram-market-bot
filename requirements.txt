@@ -1,6 +1,4 @@
-python-telegram-bot==21.4
-python-dotenv
+python-telegram-bot[job-queue]==21.6
 requests
-pillow
 beautifulsoup4
 lxml
