@@ -1,38 +1,32 @@
 def generate_post(product):
 
-    name = product["name"]
-    price = product["price"]
-    old = product["old_price"]
-    discount = product["discount"]
-    rating = product["rating"]
-    reviews = product["reviews"]
-    link = product["link"]
-    market = product["market"]
-
-
-    text = f"""
-
+    return f"""
 🔥 НАХОДКА ДНЯ
 
-{market}
 
-😍 {name}
+{product['market']}
 
-💰 Было: {old}
-🔥 Сейчас: {price}
 
-📉 Скидка: {discount}
+😍 {product['name']}
 
-⭐ Рейтинг: {rating}
-💬 Отзывов: {reviews}
+
+💰 Было: {product['old_price']}
+
+🔥 Сейчас: {product['price']}
+
+
+📉 Скидка: {product['discount']}
+
+
+⭐ Рейтинг: {product['rating']}
+
+💬 Отзывов: {product['reviews']}
+
 
 🛒 Забрать находку:
-{link}
+
+{product['link']}
 
 
 #находки #скидки #ozon #wildberries
-
-"""
-
-
-    return text.strip()
+""".strip()
