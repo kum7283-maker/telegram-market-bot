@@ -1,58 +1,162 @@
+import requests
 import random
+
+
+# Категории WB
+CATEGORIES = [
+    "товары для дома",
+    "электроника",
+    "автотовары",
+    "инструменты",
+    "одежда"
+]
 
 
 def get_product():
 
-    products = [
+    category = random.choice(CATEGORIES)
 
-        {
+    url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
+
+    params = {
+        "query": category,
+        "resultset": "catalog",
+        "sort": "popular",
+        "page": 1
+    }
+
+
+    headers = {
+        "User-Agent":
+        "Mozilla/5.0"
+    }
+
+
+    try:
+
+        response = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=10
+        )
+
+
+        data = response.json()
+
+
+        products = data["data"]["products"]
+
+
+        # выбираем случайный товар
+        product = random.choice(products)
+
+
+        name = product.get(
+            "name",
+            "Товар WB"
+        )
+
+
+        price = product.get(
+            "salePriceU",
+            0
+        ) // 100
+
+
+        old_price = product.get(
+            "priceU",
+            0
+        ) // 100
+
+
+        discount = 0
+
+        if old_price > 0:
+
+            discount = round(
+                (1 - price / old_price) * 100
+            )
+
+
+        article = product.get(
+            "id"
+        )
+
+
+        link = (
+            f"https://www.wildberries.ru/catalog/{article}/detail.aspx"
+        )
+
+
+        # фото
+        image = (
+            f"https://basket-{product.get('basket')}.wbbasket.ru/"
+            f"vol{article//100000}/part{article//1000}/"
+            f"{article}/images/big/1.webp"
+        )
+
+
+        return {
+
             "market": "🟣 Wildberries",
-            "name": "Робот-пылесос Xiaomi",
-            "price": "8990 ₽",
-            "old_price": "12990 ₽",
-            "discount": "31%",
-            "rating": "4.8",
-            "reviews": "15000",
-            "link": "https://www.wildberries.ru"
-        },
 
+            "name": name,
 
-        {
-            "market": "🟡 Ozon",
-            "name": "Беспроводные наушники Bluetooth",
-            "price": "1290 ₽",
-            "old_price": "2990 ₽",
-            "discount": "57%",
-            "rating": "4.9",
-            "reviews": "12000",
-            "link": "https://www.ozon.ru"
-        },
+            "price": f"{price} ₽",
 
+            "old_price": f"{old_price} ₽",
 
-        {
-            "market": "🟣 Wildberries",
-            "name": "Умные часы Smart Watch",
-            "price": "1990 ₽",
-            "old_price": "3990 ₽",
-            "discount": "50%",
-            "rating": "4.7",
-            "reviews": "5400",
-            "link": "https://www.wildberries.ru"
-        },
+            "discount": f"{discount}%",
 
+            "rating": str(
+                product.get(
+                    "rating",
+                    "Нет"
+                )
+            ),
 
-        {
-            "market": "🟡 Ozon",
-            "name": "Органайзер для кухни",
-            "price": "690 ₽",
-            "old_price": "1490 ₽",
-            "discount": "54%",
-            "rating": "4.8",
-            "reviews": "8700",
-            "link": "https://www.ozon.ru"
+            "reviews": str(
+                product.get(
+                    "feedbacks",
+                    0
+                )
+            ),
+
+            "link": link,
+
+            "image": image
         }
 
-    ]
 
 
-    return random.choice(products)
+    except Exception as e:
+
+
+        print(
+            "WB ERROR:",
+            e
+        )
+
+
+        # запасной вариант
+        return {
+
+            "market": "🟣 Wildberries",
+
+            "name": "Популярный товар дня",
+
+            "price": "999 ₽",
+
+            "old_price": "1999 ₽",
+
+            "discount": "50%",
+
+            "rating": "4.8",
+
+            "reviews": "5000",
+
+            "link": "https://www.wildberries.ru",
+
+            "image": None
+        }
