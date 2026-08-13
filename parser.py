@@ -2,82 +2,111 @@ import requests
 import random
 
 
-PRODUCTS = [
-    123456789,
-    987654321
+CATEGORIES = [
+    "товары для дома",
+    "электроника",
+    "авто",
+    "инструменты",
+    "одежда"
 ]
 
 
 def get_product():
 
-    article = random.choice(PRODUCTS)
-
-    url = (
-        f"https://card.wb.ru/cards/v2/detail"
-    )
-
-    params = {
-        "appType": 1,
-        "curr": "rub",
-        "dest": -1257786,
-        "nm": article
-    }
-
-
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
-
     try:
 
-        r = requests.get(
+        category = random.choice(CATEGORIES)
+
+
+        url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
+
+
+        params = {
+            "query": category,
+            "resultset": "catalog",
+            "sort": "popular",
+            "page": 1
+        }
+
+
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json",
+            "Referer": "https://www.wildberries.ru/"
+        }
+
+
+        response = requests.get(
             url,
             params=params,
             headers=headers,
-            timeout=15
+            timeout=20
         )
 
 
-        data = r.json()
+        print("WB STATUS:", response.status_code)
 
 
-        card = data["data"]["products"][0]
+        data = response.json()
 
 
-        name = card.get(
-            "name",
-            "Товар WB"
+        products = (
+            data
+            .get("data", {})
+            .get("products", [])
         )
+
+
+        if not products:
+
+            raise Exception(
+                "WB вернул пустой список товаров"
+            )
+
+
+        product = random.choice(products)
+
+
+        article = product.get("id")
 
 
         price = (
-            card["sizes"][0]["price"]["product"]
+            product.get(
+                "salePriceU",
+                0
+            )
             // 100
         )
 
 
         old_price = (
-            card["sizes"][0]["price"]["basic"]
+            product.get(
+                "priceU",
+                0
+            )
             // 100
         )
 
 
         discount = 0
 
-        if old_price:
+        if old_price and price:
 
             discount = round(
                 (1 - price / old_price) * 100
             )
 
 
-        image = (
-            f"https://basket-01.wbbasket.ru/"
-            f"vol{article//100000}/"
-            f"part{article//1000}/"
-            f"{article}/images/big/1.webp"
-        )
+        image = None
+
+
+        if product.get("id"):
+
+            image = (
+                f"https://images.wbstatic.net/"
+                f"big/new/{article//10000}/"
+                f"{article}-1.jpg"
+            )
 
 
         return {
@@ -86,7 +115,10 @@ def get_product():
 
             "article": str(article),
 
-            "name": name,
+            "name": product.get(
+                "name",
+                "Товар WB"
+            ),
 
             "price": f"{price} ₽",
 
@@ -95,11 +127,17 @@ def get_product():
             "discount": f"{discount}%",
 
             "rating": str(
-                card.get("rating", "")
+                product.get(
+                    "rating",
+                    "нет"
+                )
             ),
 
             "reviews": str(
-                card.get("feedbacks", "")
+                product.get(
+                    "feedbacks",
+                    0
+                )
             ),
 
             "link":
@@ -108,24 +146,41 @@ def get_product():
             "image": image,
 
             "video": None
+
         }
 
 
     except Exception as e:
 
-        print("WB ERROR:", e)
+
+        print(
+            "WB ERROR:",
+            repr(e)
+        )
+
 
         return {
 
             "market": "🟣 Wildberries",
+
             "article": "ошибка",
-            "name": "Ошибка получения карточки",
+
+            "name": f"Ошибка WB: {e}",
+
             "price": "0 ₽",
+
             "old_price": "0 ₽",
+
             "discount": "0%",
+
             "rating": "0",
+
             "reviews": "0",
-            "link": "https://www.wildberries.ru",
+
+            "link":
+            "https://www.wildberries.ru",
+
             "image": None,
+
             "video": None
         }
