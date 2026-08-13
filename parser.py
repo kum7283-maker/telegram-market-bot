@@ -15,9 +15,7 @@ def get_product():
 
     category = random.choice(CATEGORIES)
 
-
     url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
-
 
     params = {
         "query": category,
@@ -25,7 +23,6 @@ def get_product():
         "sort": "popular",
         "page": 1
     }
-
 
     headers = {
         "User-Agent": "Mozilla/5.0"
@@ -48,11 +45,17 @@ def get_product():
         products = data["data"]["products"]
 
 
-        # выбираем товар
+        # берём товар с картинкой
+        products = [
+            p for p in products
+            if p.get("id")
+        ]
+
+
         product = random.choice(products)
 
 
-        article = product["id"]
+        article = product.get("id")
 
 
         name = product.get(
@@ -73,7 +76,8 @@ def get_product():
         ) // 100
 
 
-        if old_price and price:
+
+        if old_price > 0:
 
             discount = round(
                 (1 - price / old_price) * 100
@@ -85,7 +89,36 @@ def get_product():
 
 
 
-        # ссылка товара
+        # данные для фото WB
+
+        root = product.get(
+            "root"
+        )
+
+        vol = product.get(
+            "vol"
+        )
+
+        part = product.get(
+            "part"
+        )
+
+        basket = product.get(
+            "basket"
+        )
+
+
+        image = None
+
+
+        if root and vol and part and basket:
+
+            image = (
+                f"https://basket-{basket}.wbbasket.ru/"
+                f"vol{vol}/part{part}/"
+                f"{root}/images/big/1.webp"
+            )
+
 
         link = (
             f"https://www.wildberries.ru/catalog/"
@@ -93,147 +126,72 @@ def get_product():
         )
 
 
-
-        # данные для картинки
-
-        vol = article // 100000
-
-        part = article // 1000
-
-
-        basket = product.get(
-            "basket",
-            "01"
-        )
-
-
-        image = (
-            f"https://basket-{basket}.wbbasket.ru/"
-            f"vol{vol}/part{part}/"
-            f"{article}/images/big/1.webp"
-        )
-
-
-
-        # видео WB часто отсутствует
-
-        video = None
-
-
-
         return {
 
+            "market": "🟣 Wildberries",
 
-            "market":
-            "🟣 Wildberries",
+            "article": str(article),
 
+            "name": name,
 
-            "article":
-            str(article),
+            "price": f"{price} ₽",
 
+            "old_price": f"{old_price} ₽",
 
-            "name":
-            name,
+            "discount": f"{discount}%",
 
-
-            "price":
-            f"{price} ₽",
-
-
-            "old_price":
-            f"{old_price} ₽",
-
-
-            "discount":
-            f"{discount}%",
-
-
-            "rating":
-            str(
+            "rating": str(
                 product.get(
                     "rating",
                     "Нет"
                 )
             ),
 
-
-            "reviews":
-            str(
+            "reviews": str(
                 product.get(
                     "feedbacks",
                     0
                 )
             ),
 
+            "link": link,
 
-            "link":
-            link,
+            "image": image,
 
-
-            "image":
-            image,
-
-
-            "video":
-            video
-
+            "video": None
         }
 
 
 
     except Exception as e:
 
-
         print(
-            "PARSER ERROR:",
+            "WB PARSER ERROR:",
             e
         )
 
 
         return {
 
+            "market": "🟣 Wildberries",
 
-            "market":
-            "🟣 Wildberries",
+            "article": "нет",
 
+            "name": "Ошибка получения товара",
 
-            "article":
-            "нет",
+            "price": "0 ₽",
 
+            "old_price": "0 ₽",
 
-            "name":
-            "Популярный товар",
+            "discount": "0%",
 
+            "rating": "0",
 
-            "price":
-            "999 ₽",
+            "reviews": "0",
 
+            "link": "https://www.wildberries.ru",
 
-            "old_price":
-            "1999 ₽",
+            "image": None,
 
-
-            "discount":
-            "50%",
-
-
-            "rating":
-            "4.8",
-
-
-            "reviews":
-            "5000",
-
-
-            "link":
-            "https://www.wildberries.ru",
-
-
-            "image":
-            None,
-
-
-            "video":
-            None
-
+            "video": None
         }
