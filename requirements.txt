@@ -1,2 +1,6 @@
 python-telegram-bot==21.4
 python-dotenv
+requests
+pillow
+beautifulsoup4
+lxml
