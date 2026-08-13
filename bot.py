@@ -1,189 +1,113 @@
 import os
-import asyncio
 import logging
-
 from dotenv import load_dotenv
 
-from aiogram import Bot, Dispatcher
-from aiogram.types import Message
-from aiogram.filters import Command
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes
+)
 
-from parser import get_products
+from products import get_products
+from ai_writer import generate_post
+from db import init_db, save_post
 
 
 load_dotenv()
 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-OWNER_ID = os.getenv("OWNER_ID")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 
-if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN не задан")
-
-
-if not OWNER_ID:
-    raise RuntimeError("OWNER_ID не задан")
-
-
-OWNER_ID = int(OWNER_ID)
-
-
-bot = Bot(
-    token=BOT_TOKEN
+logging.basicConfig(
+    level=logging.INFO
 )
 
 
-dp = Dispatcher()
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-
-
-def is_owner(message):
-    return message.from_user.id == OWNER_ID
-
-
-
-@dp.message(Command("start"))
-async def start(message: Message):
-
-    if not is_owner(message):
-        await message.answer(
-            "⛔ Доступ только для владельца"
-        )
-        return
-
-
-    await message.answer(
-"""
-🤖 WB × OZON НАХОДКИ
-
-Команды:
-
-/test — проверка
-/status — состояние
-/post — публикация товара
-/help — помощь
-"""
+    await update.message.reply_text(
+        "🤖 WB × OZON БОТ\n\n"
+        "/post — новая находка\n"
+        "/test — тест\n"
+        "/status — статус"
     )
 
 
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-@dp.message(Command("help"))
-async def help_cmd(message: Message):
-
-    if not is_owner(message):
-        return
-
-    await message.answer(
-"""
-📌 Команды:
-
-/test
-/status
-/post
-"""
-    )
-
-
-
-@dp.message(Command("test"))
-async def test(message: Message):
-
-    if not is_owner(message):
-        return
-
-
-    await message.answer(
+    await update.message.reply_text(
         "✅ Бот работает"
     )
 
 
-
-@dp.message(Command("status"))
-async def status(message: Message):
-
-    if not is_owner(message):
-        return
-
-
-    await message.answer(
-"""
-🟢 Статус:
-
-Бот запущен
-WB подключен
-Ozon подключен
-"""
-    )
-
-
-
-@dp.message(Command("post"))
-async def post(message: Message):
-
-    if not is_owner(message):
-        return
-
+async def post(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     product = get_products()
 
+    text = generate_post(product)
 
-    text = f"""
-🔥 НАХОДКА ДНЯ
-
-
-{product['market']}
+    save_post(text)
 
 
-😍 {product['name']}
+    if CHANNEL_ID:
 
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=text
+        )
 
-💰 Цена:
-{product['price']}
+    else:
 
-
-❌ Было:
-{product['old_price']}
-
-
-📉 Скидка:
-{product['discount']}
-
-
-⭐ Рейтинг:
-{product['rating']}
-
-
-💬 Отзывов:
-{product['reviews']}
-
-
-🛒 Забрать находку:
-{product['link']}
-
-
-#находки #скидки #WB #OZON
-"""
-
-
-    await message.answer(text)
+        await update.message.reply_text(text)
 
 
 
-async def main():
+async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    logging.basicConfig(
-        level=logging.INFO
+    product = get_products()
+
+    text = generate_post(product)
+
+    await update.message.reply_text(text)
+
+
+
+def main():
+
+    init_db()
+
+
+    app = Application.builder()\
+        .token(BOT_TOKEN)\
+        .build()
+
+
+    app.add_handler(
+        CommandHandler("start", start)
+    )
+
+    app.add_handler(
+        CommandHandler("post", post)
+    )
+
+    app.add_handler(
+        CommandHandler("test", test)
+    )
+
+    app.add_handler(
+        CommandHandler("status", status)
     )
 
 
-    print("🤖 Бот запущен")
+    print("BOT STARTED")
 
 
-    await dp.start_polling(bot)
+    app.run_polling()
 
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
