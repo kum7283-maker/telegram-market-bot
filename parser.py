@@ -2,39 +2,40 @@ import requests
 import random
 
 
-CATEGORIES = [
-    "товары для дома",
-    "электроника",
-    "авто",
-    "инструменты",
-    "одежда"
+ARTICLES = [
+    183126859,
+    145774392,
+    219739888,
+    168542331,
+    234567891
 ]
 
 
 def get_product():
 
+    article = random.choice(ARTICLES)
+
+
+    url = (
+        "https://card.wb.ru/cards/v2/detail"
+    )
+
+
+    params = {
+        "appType": 1,
+        "curr": "rub",
+        "dest": -1257786,
+        "nm": article
+    }
+
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+    }
+
+
     try:
-
-        category = random.choice(CATEGORIES)
-
-
-        url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
-
-
-        params = {
-            "query": category,
-            "resultset": "catalog",
-            "sort": "popular",
-            "page": 1
-        }
-
-
-        headers = {
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "application/json",
-            "Referer": "https://www.wildberries.ru/"
-        }
-
 
         response = requests.get(
             url,
@@ -42,9 +43,6 @@ def get_product():
             headers=headers,
             timeout=20
         )
-
-
-        print("WB STATUS:", response.status_code)
 
 
         data = response.json()
@@ -60,53 +58,49 @@ def get_product():
         if not products:
 
             raise Exception(
-                "WB вернул пустой список товаров"
+                "Карточка WB не найдена"
             )
 
 
-        product = random.choice(products)
+        product = products[0]
 
 
-        article = product.get("id")
+        price_data = (
+            product
+            .get("sizes", [{}])[0]
+            .get("price", {})
+        )
 
 
         price = (
-            product.get(
-                "salePriceU",
-                0
-            )
+            price_data
+            .get("product", 0)
             // 100
         )
 
 
         old_price = (
-            product.get(
-                "priceU",
-                0
-            )
+            price_data
+            .get("basic", 0)
             // 100
         )
 
 
         discount = 0
 
-        if old_price and price:
+        if old_price:
 
             discount = round(
                 (1 - price / old_price) * 100
             )
 
 
-        image = None
-
-
-        if product.get("id"):
-
-            image = (
-                f"https://images.wbstatic.net/"
-                f"big/new/{article//10000}/"
-                f"{article}-1.jpg"
-            )
+        image = (
+            f"https://basket-01.wbbasket.ru/"
+            f"vol{article//100000}/"
+            f"part{article//1000}/"
+            f"{article}/images/big/1.webp"
+        )
 
 
         return {
@@ -129,7 +123,7 @@ def get_product():
             "rating": str(
                 product.get(
                     "rating",
-                    "нет"
+                    0
                 )
             ),
 
@@ -146,16 +140,14 @@ def get_product():
             "image": image,
 
             "video": None
-
         }
 
 
     except Exception as e:
 
-
         print(
             "WB ERROR:",
-            repr(e)
+            e
         )
 
 
@@ -165,7 +157,7 @@ def get_product():
 
             "article": "ошибка",
 
-            "name": f"Ошибка WB: {e}",
+            "name": f"Ошибка: {e}",
 
             "price": "0 ₽",
 
@@ -177,8 +169,7 @@ def get_product():
 
             "reviews": "0",
 
-            "link":
-            "https://www.wildberries.ru",
+            "link": "https://www.wildberries.ru",
 
             "image": None,
 
