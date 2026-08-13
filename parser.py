@@ -1,53 +1,43 @@
 import random
 
 
-def get_products():
+def get_product():
 
     products = [
+
         {
             "market": "🟣 Wildberries",
-            "name": "Органайзер для хранения вещей",
-            "price": "899 ₽",
-            "old_price": "1990 ₽",
-            "discount": "55%",
-            "rating": "4.9",
-            "reviews": "8500",
-            "link": "https://www.wildberries.ru/"
+            "name": "Робот-пылесос Xiaomi",
+            "price": "8990 ₽",
+            "old_price": "12990 ₽",
+            "discount": "31%",
+            "rating": "4.8",
+            "reviews": "15000",
+            "link": "https://www.wildberries.ru"
         },
 
         {
             "market": "🟡 Ozon",
-            "name": "Беспроводные наушники",
+            "name": "Беспроводные наушники Bluetooth",
             "price": "1290 ₽",
             "old_price": "2990 ₽",
             "discount": "57%",
-            "rating": "4.8",
+            "rating": "4.9",
             "reviews": "12000",
-            "link": "https://www.ozon.ru/"
+            "link": "https://www.ozon.ru"
         },
 
         {
             "market": "🟣 Wildberries",
-            "name": "Умные часы",
+            "name": "Умные часы Smart Watch",
             "price": "1990 ₽",
             "old_price": "3990 ₽",
             "discount": "50%",
             "rating": "4.7",
             "reviews": "5400",
-            "link": "https://www.wildberries.ru/"
-        },
-
-        {
-            "market": "🟡 Ozon",
-            "name": "Портативная колонка",
-            "price": "1590 ₽",
-            "old_price": "2990 ₽",
-            "discount": "47%",
-            "rating": "4.9",
-            "reviews": "9200",
-            "link": "https://www.ozon.ru/"
+            "link": "https://www.wildberries.ru"
         }
-    ]
 
+    ]
 
     return random.choice(products)
