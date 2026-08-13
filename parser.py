@@ -3,7 +3,7 @@ import random
 
 
 CATEGORIES = [
-    "дом",
+    "товары для дома",
     "электроника",
     "авто",
     "инструменты",
@@ -13,14 +13,13 @@ CATEGORIES = [
 
 def get_product():
 
-    query = random.choice(CATEGORIES)
+    category = random.choice(CATEGORIES)
 
-
-    url = "https://search.wb.ru/exactmatch/ru/male/v4/search"
+    url = "https://search.wb.ru/exactmatch/ru/common/v5/search"
 
 
     params = {
-        "query": query,
+        "query": category,
         "resultset": "catalog",
         "page": 1,
         "sort": "popular"
@@ -33,109 +32,157 @@ def get_product():
     }
 
 
-    response = requests.get(
-        url,
-        params=params,
-        headers=headers,
-        timeout=15
-    )
+    try:
 
-
-    data = response.json()
-
-
-    products = data.get(
-        "data",
-        {}
-    ).get(
-        "products",
-        []
-    )
-
-
-    if not products:
-        raise Exception("WB не вернул товары")
-
-
-    product = random.choice(products)
-
-
-    article = product["id"]
-
-
-    price = product.get(
-        "salePriceU",
-        0
-    ) // 100
-
-
-    old_price = product.get(
-        "priceU",
-        0
-    ) // 100
-
-
-    discount = 0
-
-    if old_price:
-        discount = round(
-            (1 - price / old_price) * 100
+        response = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=20
         )
 
 
-    # фото WB
-    basket = product.get("basket")
-    vol = product.get("vol")
-    part = product.get("part")
-    root = product.get("root")
+        response.raise_for_status()
 
 
-    image = None
+        data = response.json()
 
-    if basket and vol and part and root:
 
-        image = (
-            f"https://basket-{basket}.wbbasket.ru/"
-            f"vol{vol}/part{part}/"
-            f"{root}/images/big/1.webp"
+        products = (
+            data
+            .get("data", {})
+            .get("products", [])
         )
 
 
-    return {
+        if not products:
 
-        "market": "🟣 Wildberries",
+            raise Exception(
+                "Товары WB не найдены"
+            )
 
-        "article": str(article),
 
-        "name": product.get(
+        product = random.choice(products)
+
+
+        article = product.get("id")
+
+
+        name = product.get(
             "name",
-            "Товар"
-        ),
+            "Товар WB"
+        )
 
-        "price": f"{price} ₽",
 
-        "old_price": f"{old_price} ₽",
-
-        "discount": f"{discount}%",
-
-        "rating": str(
+        price = (
             product.get(
-                "rating",
-                "Нет"
-            )
-        ),
-
-        "reviews": str(
-            product.get(
-                "feedbacks",
+                "salePriceU",
                 0
+            ) // 100
+        )
+
+
+        old_price = (
+            product.get(
+                "priceU",
+                0
+            ) // 100
+        )
+
+
+        discount = 0
+
+        if old_price > 0 and price > 0:
+
+            discount = round(
+                (1 - price / old_price) * 100
             )
-        ),
 
-        "link":
-        f"https://www.wildberries.ru/catalog/{article}/detail.aspx",
 
-        "image": image,
+        # картинка WB
 
-        "video": None
-    }
+        image = None
+
+
+        if article:
+
+            image = (
+                f"https://basket-01.wbbasket.ru/"
+                f"vol{article//100000}/"
+                f"part{article//1000}/"
+                f"{article}/images/big/1.webp"
+            )
+
+
+        return {
+
+            "market": "🟣 Wildberries",
+
+            "article": str(article),
+
+            "name": name,
+
+            "price": f"{price} ₽",
+
+            "old_price": f"{old_price} ₽",
+
+            "discount": f"{discount}%",
+
+            "rating": str(
+                product.get(
+                    "rating",
+                    "Нет"
+                )
+            ),
+
+            "reviews": str(
+                product.get(
+                    "feedbacks",
+                    0
+                )
+            ),
+
+            "link":
+            f"https://www.wildberries.ru/catalog/{article}/detail.aspx",
+
+            "image": image,
+
+            "video": None
+        }
+
+
+    except Exception as e:
+
+        print(
+            "WB ERROR:",
+            e
+        )
+
+
+        # чтобы бот не падал
+
+        return {
+
+            "market": "🟣 Wildberries",
+
+            "article": "нет",
+
+            "name": "Не удалось получить товар",
+
+            "price": "0 ₽",
+
+            "old_price": "0 ₽",
+
+            "discount": "0%",
+
+            "rating": "0",
+
+            "reviews": "0",
+
+            "link":
+            "https://www.wildberries.ru",
+
+            "image": None,
+
+            "video": None
+        }
