@@ -9,11 +9,10 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS posts(
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         text TEXT
     )
     """)
-
 
     con.commit()
     con.close()
