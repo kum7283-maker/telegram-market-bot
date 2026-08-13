@@ -15,7 +15,8 @@ def get_product():
 
     category = random.choice(CATEGORIES)
 
-    url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
+    search_url = "https://search.wb.ru/exactmatch/ru/common/v4/search"
+
 
     params = {
         "query": category,
@@ -24,6 +25,7 @@ def get_product():
         "page": 1
     }
 
+
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
@@ -31,31 +33,23 @@ def get_product():
 
     try:
 
-        response = requests.get(
-            url,
+        r = requests.get(
+            search_url,
             params=params,
             headers=headers,
             timeout=15
         )
 
 
-        data = response.json()
-
+        data = r.json()
 
         products = data["data"]["products"]
-
-
-        # берём товар с картинкой
-        products = [
-            p for p in products
-            if p.get("id")
-        ]
 
 
         product = random.choice(products)
 
 
-        article = product.get("id")
+        article = product["id"]
 
 
         name = product.get(
@@ -76,54 +70,30 @@ def get_product():
         ) // 100
 
 
+        discount = 0
 
         if old_price > 0:
-
             discount = round(
                 (1 - price / old_price) * 100
             )
 
-        else:
 
-            discount = 0
-
-
-
-        # данные для фото WB
-
-        root = product.get(
-            "root"
-        )
-
-        vol = product.get(
-            "vol"
-        )
-
-        part = product.get(
-            "part"
-        )
-
-        basket = product.get(
-            "basket"
-        )
+        # данные для картинки
+        vol = product.get("vol")
+        part = product.get("part")
+        root = product.get("root")
 
 
         image = None
 
 
-        if root and vol and part and basket:
+        if vol and part and root:
 
             image = (
-                f"https://basket-{basket}.wbbasket.ru/"
+                f"https://basket-01.wbbasket.ru/"
                 f"vol{vol}/part{part}/"
                 f"{root}/images/big/1.webp"
             )
-
-
-        link = (
-            f"https://www.wildberries.ru/catalog/"
-            f"{article}/detail.aspx"
-        )
 
 
         return {
@@ -154,7 +124,8 @@ def get_product():
                 )
             ),
 
-            "link": link,
+            "link":
+            f"https://www.wildberries.ru/catalog/{article}/detail.aspx",
 
             "image": image,
 
@@ -162,36 +133,22 @@ def get_product():
         }
 
 
-
     except Exception as e:
 
-        print(
-            "WB PARSER ERROR:",
-            e
-        )
+        print("WB ERROR:", e)
 
 
         return {
 
             "market": "🟣 Wildberries",
-
             "article": "нет",
-
-            "name": "Ошибка получения товара",
-
+            "name": "Ошибка",
             "price": "0 ₽",
-
             "old_price": "0 ₽",
-
             "discount": "0%",
-
             "rating": "0",
-
             "reviews": "0",
-
             "link": "https://www.wildberries.ru",
-
             "image": None,
-
             "video": None
         }
