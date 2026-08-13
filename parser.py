@@ -2,116 +2,82 @@ import requests
 import random
 
 
-CATEGORIES = [
-    "товары для дома",
-    "электроника",
-    "авто",
-    "инструменты",
-    "одежда"
+PRODUCTS = [
+    123456789,
+    987654321
 ]
 
 
 def get_product():
 
-    category = random.choice(CATEGORIES)
+    article = random.choice(PRODUCTS)
 
-    url = "https://search.wb.ru/exactmatch/ru/common/v5/search"
-
+    url = (
+        f"https://card.wb.ru/cards/v2/detail"
+    )
 
     params = {
-        "query": category,
-        "resultset": "catalog",
-        "page": 1,
-        "sort": "popular"
+        "appType": 1,
+        "curr": "rub",
+        "dest": -1257786,
+        "nm": article
     }
 
 
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
+        "User-Agent": "Mozilla/5.0"
     }
 
 
     try:
 
-        response = requests.get(
+        r = requests.get(
             url,
             params=params,
             headers=headers,
-            timeout=20
+            timeout=15
         )
 
 
-        response.raise_for_status()
+        data = r.json()
 
 
-        data = response.json()
+        card = data["data"]["products"][0]
 
 
-        products = (
-            data
-            .get("data", {})
-            .get("products", [])
-        )
-
-
-        if not products:
-
-            raise Exception(
-                "Товары WB не найдены"
-            )
-
-
-        product = random.choice(products)
-
-
-        article = product.get("id")
-
-
-        name = product.get(
+        name = card.get(
             "name",
             "Товар WB"
         )
 
 
         price = (
-            product.get(
-                "salePriceU",
-                0
-            ) // 100
+            card["sizes"][0]["price"]["product"]
+            // 100
         )
 
 
         old_price = (
-            product.get(
-                "priceU",
-                0
-            ) // 100
+            card["sizes"][0]["price"]["basic"]
+            // 100
         )
 
 
         discount = 0
 
-        if old_price > 0 and price > 0:
+        if old_price:
 
             discount = round(
                 (1 - price / old_price) * 100
             )
 
 
-        # картинка WB
-
-        image = None
-
-
-        if article:
-
-            image = (
-                f"https://basket-01.wbbasket.ru/"
-                f"vol{article//100000}/"
-                f"part{article//1000}/"
-                f"{article}/images/big/1.webp"
-            )
+        image = (
+            f"https://basket-01.wbbasket.ru/"
+            f"vol{article//100000}/"
+            f"part{article//1000}/"
+            f"{article}/images/big/1.webp"
+        )
 
 
         return {
@@ -129,17 +95,11 @@ def get_product():
             "discount": f"{discount}%",
 
             "rating": str(
-                product.get(
-                    "rating",
-                    "Нет"
-                )
+                card.get("rating", "")
             ),
 
             "reviews": str(
-                product.get(
-                    "feedbacks",
-                    0
-                )
+                card.get("feedbacks", "")
             ),
 
             "link":
@@ -153,36 +113,19 @@ def get_product():
 
     except Exception as e:
 
-        print(
-            "WB ERROR:",
-            e
-        )
-
-
-        # чтобы бот не падал
+        print("WB ERROR:", e)
 
         return {
 
             "market": "🟣 Wildberries",
-
-            "article": "нет",
-
-            "name": "Не удалось получить товар",
-
+            "article": "ошибка",
+            "name": "Ошибка получения карточки",
             "price": "0 ₽",
-
             "old_price": "0 ₽",
-
             "discount": "0%",
-
             "rating": "0",
-
             "reviews": "0",
-
-            "link":
-            "https://www.wildberries.ru",
-
+            "link": "https://www.wildberries.ru",
             "image": None,
-
             "video": None
         }
