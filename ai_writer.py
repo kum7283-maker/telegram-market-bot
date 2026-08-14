@@ -194,4 +194,3 @@ def generate_post(news):
 
 #Москва #НовостиМосквы
 
-""".strip()
