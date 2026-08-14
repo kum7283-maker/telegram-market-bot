@@ -1,46 +1,114 @@
 import feedparser
-import random
 import requests
+
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 
 SOURCES = [
 
     "https://ria.ru/export/rss2/archive/index.xml",
 
-    "https://tass.ru/rss/v2.xml",
+    "https://www.m24.ru/rss.xml",
 
-    "https://www.m24.ru/rss.xml"
+    "https://tass.ru/rss/v2.xml"
+
+]
+
+
+
+MOSCOW_WORDS = [
+
+    "москва",
+    "москве",
+    "москвы",
+    "москвой",
+    "столица",
+    "мэрия",
+    "мосгор",
+    "подмосковье"
+
+]
+
+
+
+IMPORTANT_WORDS = [
+
+    "дтп",
+    "пожар",
+    "полиция",
+    "задерж",
+    "авари",
+    "метро",
+    "мцд",
+    "мцк",
+    "погода",
+    "снег",
+    "дожд",
+    "строительство"
 
 ]
 
 
 
 
+
+def is_moscow_news(text):
+
+
+    text = text.lower()
+
+
+    # Москва обязательно
+
+    if not any(
+        word in text
+        for word in MOSCOW_WORDS
+    ):
+
+        return False
+
+
+
+    return True
+
+
+
+
+
 def get_image(url):
+
 
     try:
 
         r = requests.get(
+
             url,
-            timeout=10,
+
+            timeout=8,
+
             headers={
                 "User-Agent":
                 "Mozilla/5.0"
             }
+
         )
 
 
         soup = BeautifulSoup(
+
             r.text,
+
             "html.parser"
+
         )
 
 
         img = soup.find(
+
             "meta",
+
             property="og:image"
+
         )
 
 
@@ -51,9 +119,10 @@ def get_image(url):
             )
 
 
-    except Exception:
+    except:
 
         pass
+
 
 
     return None
@@ -65,7 +134,7 @@ def get_image(url):
 def get_news():
 
 
-    news_list = []
+    news = []
 
 
 
@@ -76,11 +145,14 @@ def get_news():
 
 
             feed = feedparser.parse(
+
                 source
+
             )
 
 
-            for item in feed.entries[:10]:
+
+            for item in feed.entries[:20]:
 
 
                 title = item.get(
@@ -95,38 +167,46 @@ def get_news():
                 )
 
 
-                link = item.get(
-                    "link",
-                    ""
+
+                text = (
+
+                    title
+                    +
+                    " "
+                    +
+                    description
+
                 )
 
 
 
-                if not title:
+                if not is_moscow_news(
+                    text
+                ):
 
                     continue
 
 
 
-                news_list.append({
+                news.append({
 
                     "title":
                     title,
 
+
                     "text":
                     description,
 
+
                     "link":
-                    link,
+                    item.get(
+                        "link",
+                        ""
+                    ),
+
 
                     "image":
-                    None,
-
-                    "time":
-                    item.get(
-                        "published",
-                        ""
-                    )
+                    None
 
                 })
 
@@ -136,38 +216,36 @@ def get_news():
 
 
             print(
-                "RSS ERROR",
+                "SOURCE ERROR:",
                 e
             )
 
 
 
 
-    if not news_list:
+
+    if not news:
 
 
         raise Exception(
-            "Новостей нет"
+            "Нет свежих новостей Москвы"
         )
 
 
 
-    # выбираем свежую
+
+    # берём случайную из свежих
+
+    result = news[0]
 
 
-    news = random.choice(
-        news_list[:10]
+
+    result["image"] = get_image(
+
+        result["link"]
+
     )
 
 
 
-    # ищем картинку
-
-
-    news["image"] = get_image(
-        news["link"]
-    )
-
-
-
-    return news
+    return result
