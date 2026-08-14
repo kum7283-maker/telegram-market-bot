@@ -1,34 +1,124 @@
 import sqlite3
+import hashlib
+import os
+
+
+DB_NAME = "news.db"
+
+
+
+def get_connection():
+
+    return sqlite3.connect(
+        DB_NAME
+    )
+
 
 
 def init_db():
 
-    con = sqlite3.connect("posts.db")
+    conn = get_connection()
 
-    cur = con.cursor()
+    cursor = conn.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS posts(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        text TEXT
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS posts (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            hash TEXT UNIQUE,
+
+            text TEXT,
+
+            created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+        )
+        """
     )
-    """)
 
-    con.commit()
-    con.close()
+
+    conn.commit()
+
+    conn.close()
+
+
+
+
+def create_hash(text):
+
+    return hashlib.md5(
+        text.encode("utf-8")
+    ).hexdigest()
+
+
+
+
+def is_post_exists(text):
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+    h = create_hash(text)
+
+
+    cursor.execute(
+        """
+        SELECT id 
+        FROM posts
+        WHERE hash = ?
+        """,
+        (h,)
+    )
+
+
+    result = cursor.fetchone()
+
+
+    conn.close()
+
+
+    return result is not None
+
+
 
 
 
 def save_post(text):
 
-    con = sqlite3.connect("posts.db")
 
-    cur = con.cursor()
+    if is_post_exists(text):
 
-    cur.execute(
-        "INSERT INTO posts(text) VALUES(?)",
-        (text,)
+        return False
+
+
+
+    conn = get_connection()
+
+    cursor = conn.cursor()
+
+
+    h = create_hash(text)
+
+
+    cursor.execute(
+        """
+        INSERT INTO posts(hash,text)
+        VALUES(?,?)
+        """,
+        (
+            h,
+            text
+        )
     )
 
-    con.commit()
-    con.close()
+
+    conn.commit()
+
+    conn.close()
+
+
+    return True
