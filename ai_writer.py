@@ -1,32 +1,34 @@
-def generate_post(product):
+def generate_post(news):
+
+    title = news.get(
+        "title",
+        "Новости Москвы"
+    )
+
+    text = news.get(
+        "text",
+        ""
+    )
+
+    link = news.get(
+        "link",
+        ""
+    )
+
 
     return f"""
-🔥 НАХОДКА ДНЯ
+🚨 **{title}**
 
 
-{product['market']}
+📍 Москва
 
 
-😍 {product['name']}
+{text}
 
 
-💰 Было: {product['old_price']}
-
-🔥 Сейчас: {product['price']}
-
-
-📉 Скидка: {product['discount']}
+🔗 Подробнее:
+{link}
 
 
-⭐ Рейтинг: {product['rating']}
-
-💬 Отзывов: {product['reviews']}
-
-
-🛒 Забрать находку:
-
-{product['link']}
-
-
-#находки #скидки #ozon #wildberries
+#Москва #НовостиМосква #МоскваСейчас
 """.strip()
