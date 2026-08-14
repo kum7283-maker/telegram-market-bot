@@ -21,6 +21,7 @@ logging.basicConfig(
 )
 
 
+
 BOT_TOKEN = os.getenv(
     "BOT_TOKEN"
 )
@@ -36,7 +37,6 @@ CHANNEL_ID = os.getenv(
 # START
 # =========================
 
-
 async def start(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
@@ -44,7 +44,7 @@ async def start(
 
     await update.message.reply_text(
         "📰 Москва News Bot запущен\n\n"
-        "/post — опубликовать новость\n"
+        "/post — отправить новость\n"
         "/test — проверить канал\n"
         "/status — статус"
     )
@@ -54,7 +54,6 @@ async def start(
 # =========================
 # STATUS
 # =========================
-
 
 async def status(
     update: Update,
@@ -72,7 +71,6 @@ async def status(
 # TEST CHANNEL
 # =========================
 
-
 async def test(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
@@ -82,17 +80,16 @@ async def test(
 
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
-            text="✅ Тест Москва News Bot"
+            text="✅ Москва News Bot работает"
         )
 
 
         await update.message.reply_text(
-            "✅ Сообщение отправлено"
+            "✅ Тест отправлен"
         )
 
 
     except Exception as e:
-
 
         await update.message.reply_text(
             f"❌ Ошибка:\n{e}"
@@ -104,55 +101,29 @@ async def test(
 # SEND NEWS
 # =========================
 
-
 async def send_news(
     context,
     news
 ):
 
-
-    text = generate_post(
-        news
-    )
-
-
-    image = news.get(
-        "image"
-    )
-
-
     try:
 
-
-        if image:
-
-
-            await context.bot.send_photo(
-
-                chat_id=CHANNEL_ID,
-
-                photo=image,
-
-                caption=text,
-
-                parse_mode="HTML"
-
-            )
+        text = generate_post(
+            news
+        )
 
 
-        else:
+        await context.bot.send_message(
 
+            chat_id=CHANNEL_ID,
 
-            await context.bot.send_message(
+            text=text,
 
-                chat_id=CHANNEL_ID,
+            parse_mode="HTML",
 
-                text=text,
+            disable_web_page_preview=False
 
-                parse_mode="HTML"
-
-            )
-
+        )
 
 
         save_post(
@@ -160,11 +131,9 @@ async def send_news(
         )
 
 
-
         logging.info(
-            "Новость опубликована"
+            "✅ Новость опубликована"
         )
-
 
 
     except Exception as e:
@@ -180,12 +149,10 @@ async def send_news(
 # MANUAL POST
 # =========================
 
-
 async def post(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
-
 
     try:
 
@@ -226,14 +193,11 @@ async def post(
 # AUTO POST
 # =========================
 
-
 async def auto_post(
     context: ContextTypes.DEFAULT_TYPE
 ):
 
-
     try:
-
 
         news = get_news()
 
@@ -248,9 +212,8 @@ async def auto_post(
 
 
         logging.info(
-            "Автопост готов"
+            "⏰ Автопост выполнен"
         )
-
 
 
     except Exception as e:
@@ -266,7 +229,6 @@ async def auto_post(
 # MAIN
 # =========================
 
-
 def main():
 
 
@@ -276,18 +238,15 @@ def main():
 
     if not BOT_TOKEN:
 
-
         raise ValueError(
-            "Нет BOT_TOKEN"
+            "❌ Нет BOT_TOKEN"
         )
-
 
 
     if not CHANNEL_ID:
 
-
         raise ValueError(
-            "Нет CHANNEL_ID"
+            "❌ Нет CHANNEL_ID"
         )
 
 
@@ -295,13 +254,8 @@ def main():
     app = (
 
         Application
-
         .builder()
-
-        .token(
-            BOT_TOKEN
-        )
-
+        .token(BOT_TOKEN)
         .build()
 
     )
@@ -341,9 +295,7 @@ def main():
 
 
 
-    # =========================
-    # АВТОПУБЛИКАЦИЯ
-    # =========================
+    # Автопубликация каждые 2 часа
 
     if app.job_queue:
 
@@ -354,7 +306,7 @@ def main():
 
             interval=7200,
 
-            first=60
+            first=120
 
         )
 
@@ -364,20 +316,17 @@ def main():
         )
 
 
-
     else:
 
-
         logging.warning(
-            "JobQueue не найден"
+            "JobQueue отсутствует"
         )
 
 
 
-    print(
-        "📰 ЗАПУЩЕН БОТ НОВОСТЕЙ МОСКВЫ"
+    logging.info(
+        "📰 БОТ ЗАПУЩЕН"
     )
-
 
 
     app.run_polling()
@@ -385,6 +334,5 @@ def main():
 
 
 if __name__ == "__main__":
-
 
     main()
