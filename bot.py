@@ -3,7 +3,6 @@ import logging
 
 
 from telegram import Update
-
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -12,21 +11,14 @@ from telegram.ext import (
 
 
 from parser import get_news
-
 from ai_writer import generate_post
-
-from db import (
-    init_db,
-    save_post,
-    is_post_exists
-)
+from db import init_db, save_post
 
 
 
 logging.basicConfig(
     level=logging.INFO
 )
-
 
 
 BOT_TOKEN = os.getenv(
@@ -44,14 +36,16 @@ CHANNEL_ID = os.getenv(
 # START
 # =========================
 
+
 async def start(
-        update: Update,
-        context: ContextTypes.DEFAULT_TYPE
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
 ):
 
     await update.message.reply_text(
         "📰 Москва News Bot запущен\n\n"
-        "/post — отправить новость\n"
+        "/post — опубликовать новость\n"
+        "/test — проверить канал\n"
         "/status — статус"
     )
 
@@ -61,9 +55,10 @@ async def start(
 # STATUS
 # =========================
 
+
 async def status(
-        update: Update,
-        context: ContextTypes.DEFAULT_TYPE
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
 ):
 
     await update.message.reply_text(
@@ -74,12 +69,45 @@ async def status(
 
 
 # =========================
-# ПУБЛИКАЦИЯ
+# TEST CHANNEL
 # =========================
 
-async def publish_news(
-        context,
-        news
+
+async def test(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
+
+    try:
+
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text="✅ Тест Москва News Bot"
+        )
+
+
+        await update.message.reply_text(
+            "✅ Сообщение отправлено"
+        )
+
+
+    except Exception as e:
+
+
+        await update.message.reply_text(
+            f"❌ Ошибка:\n{e}"
+        )
+
+
+
+# =========================
+# SEND NEWS
+# =========================
+
+
+async def send_news(
+    context,
+    news
 ):
 
 
@@ -88,22 +116,9 @@ async def publish_news(
     )
 
 
-    # Проверяем дубликат
-
-    if is_post_exists(text):
-
-        logging.info(
-            "⏭ Дубликат новости"
-        )
-
-        return
-
-
-
     image = news.get(
         "image"
     )
-
 
 
     try:
@@ -145,8 +160,9 @@ async def publish_news(
         )
 
 
+
         logging.info(
-            "✅ Новость опубликована"
+            "Новость опубликована"
         )
 
 
@@ -160,15 +176,14 @@ async def publish_news(
 
 
 
-
-
 # =========================
-# РУЧНОЙ ПОСТ
+# MANUAL POST
 # =========================
+
 
 async def post(
-        update: Update,
-        context: ContextTypes.DEFAULT_TYPE
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
 ):
 
 
@@ -178,7 +193,7 @@ async def post(
         news = get_news()
 
 
-        await publish_news(
+        await send_news(
 
             context,
 
@@ -188,7 +203,7 @@ async def post(
 
 
         await update.message.reply_text(
-            "✅ Новость отправлена"
+            "🔥 Новость опубликована"
         )
 
 
@@ -196,7 +211,9 @@ async def post(
     except Exception as e:
 
 
-        logging.error(e)
+        logging.error(
+            e
+        )
 
 
         await update.message.reply_text(
@@ -205,14 +222,13 @@ async def post(
 
 
 
-
-
 # =========================
-# АВТОПОСТ
+# AUTO POST
 # =========================
+
 
 async def auto_post(
-        context: ContextTypes.DEFAULT_TYPE
+    context: ContextTypes.DEFAULT_TYPE
 ):
 
 
@@ -222,7 +238,7 @@ async def auto_post(
         news = get_news()
 
 
-        await publish_news(
+        await send_news(
 
             context,
 
@@ -232,7 +248,7 @@ async def auto_post(
 
 
         logging.info(
-            "🤖 Автопост выполнен"
+            "Автопост готов"
         )
 
 
@@ -241,54 +257,15 @@ async def auto_post(
 
 
         logging.error(
-            f"Auto error: {e}"
+            f"Автопост ошибка: {e}"
         )
-
-
-
-
-
-# =========================
-# TEST
-# =========================
-
-async def test(
-        update: Update,
-        context: ContextTypes.DEFAULT_TYPE
-):
-
-
-    try:
-
-
-        await context.bot.send_message(
-
-            chat_id=CHANNEL_ID,
-
-            text="✅ Тест Москва News Bot"
-
-        )
-
-
-        await update.message.reply_text(
-            "✅ Тест отправлен"
-        )
-
-
-    except Exception as e:
-
-
-        await update.message.reply_text(
-            f"❌ Ошибка:\n{e}"
-        )
-
-
 
 
 
 # =========================
 # MAIN
 # =========================
+
 
 def main():
 
@@ -299,12 +276,15 @@ def main():
 
     if not BOT_TOKEN:
 
+
         raise ValueError(
             "Нет BOT_TOKEN"
         )
 
 
+
     if not CHANNEL_ID:
+
 
         raise ValueError(
             "Нет CHANNEL_ID"
@@ -328,50 +308,42 @@ def main():
 
 
 
-    # команды
-
     app.add_handler(
-
         CommandHandler(
             "start",
             start
         )
-
     )
 
 
     app.add_handler(
-
         CommandHandler(
             "status",
             status
         )
-
     )
 
 
     app.add_handler(
-
-        CommandHandler(
-            "post",
-            post
-        )
-
-    )
-
-
-    app.add_handler(
-
         CommandHandler(
             "test",
             test
         )
+    )
 
+
+    app.add_handler(
+        CommandHandler(
+            "post",
+            post
+        )
     )
 
 
 
-    # автопост
+    # =========================
+    # АВТОПУБЛИКАЦИЯ
+    # =========================
 
     if app.job_queue:
 
@@ -380,7 +352,7 @@ def main():
 
             auto_post,
 
-            interval=1800,
+            interval=7200,
 
             first=60
 
@@ -397,13 +369,13 @@ def main():
 
 
         logging.warning(
-            "JobQueue не доступен"
+            "JobQueue не найден"
         )
 
 
 
     print(
-        "📰 MOSCOW NEWS BOT STARTED"
+        "📰 ЗАПУЩЕН БОТ НОВОСТЕЙ МОСКВЫ"
     )
 
 
@@ -412,7 +384,7 @@ def main():
 
 
 
-
 if __name__ == "__main__":
+
 
     main()
