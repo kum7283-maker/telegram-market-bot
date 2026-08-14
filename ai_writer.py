@@ -1,82 +1,44 @@
-def get_category(text):
+import os
+import logging
 
-    text = text.lower()
-
-
-    if any(word in text for word in [
-        "дтп",
-        "полиция",
-        "напал",
-        "нож",
-        "убил",
-        "задерж",
-        "преступ"
-    ]):
-        return (
-            "🚨 ПРОИСШЕСТВИЯ",
-            "#Происшествия"
-        )
+from openai import OpenAI
 
 
-    if any(word in text for word in [
-        "метро",
-        "автобус",
-        "трамвай",
-        "мцд",
-        "мцк",
-        "дорог",
-        "пробк"
-    ]):
-        return (
-            "🚇 ТРАНСПОРТ",
-            "#Транспорт"
-        )
+client = None
 
 
-    if any(word in text for word in [
-        "дожд",
-        "снег",
-        "погод",
-        "мороз",
-        "жара"
-    ]):
-        return (
-            "🌧 ПОГОДА",
-            "#Погода"
-        )
+api_key = os.getenv(
+    "OPENAI_API_KEY"
+)
 
 
-    if any(word in text for word in [
-        "стро",
-        "дом",
-        "жк",
-        "ремонт"
-    ]):
-        return (
-            "🏙 ГОРОД",
-            "#Город"
-        )
+if api_key:
 
-
-    return (
-        "📰 ГЛАВНОЕ",
-        "#Новости"
+    client = OpenAI(
+        api_key=api_key
     )
 
 
 
+def local_rewrite(title, text):
 
-def clean_description(text):
+    """
+    Резерв без ИИ,
+    если нет API ключа
+    """
 
     text = text.replace(
-        "\n",
-        " "
-    )
-
-    text = text.strip()
+        title,
+        ""
+    ).strip()
 
 
-    return text[:500]
+    if len(text) > 500:
+
+        text = text[:500] + "..."
+
+
+    return text
 
 
 
@@ -103,21 +65,153 @@ def generate_post(news):
     )
 
 
-    category, tag = get_category(
-        title + " " + description
-    )
+
+    # если есть GPT
+
+    if client:
 
 
-    description = clean_description(
+        try:
+
+
+            response = client.chat.completions.create(
+
+                model="gpt-4.1-mini",
+
+                messages=[
+
+                    {
+                        "role": "system",
+
+                        "content":
+                        """
+Ты редактор новостного Telegram-канала Москвы.
+
+Задача:
+- перепиши новость коротко;
+- сохрани только факты;
+- не придумывай детали;
+- убери повтор заголовка;
+- стиль: современный новостной канал.
+Длина 2-4 предложения.
+"""
+                    },
+
+
+                    {
+                        "role": "user",
+
+                        "content":
+                        f"""
+Заголовок:
+{title}
+
+Текст:
+{description}
+"""
+                    }
+
+                ],
+
+                temperature=0.3
+
+            )
+
+
+            description = (
+
+                response
+                .choices[0]
+                .message
+                .content
+                .strip()
+
+            )
+
+
+        except Exception as e:
+
+
+            logging.error(
+                f"AI ошибка: {e}"
+            )
+
+
+            description = local_rewrite(
+                title,
+                description
+            )
+
+
+    else:
+
+
+        description = local_rewrite(
+            title,
+            description
+        )
+
+
+
+
+    # категория
+
+
+    full = (
+        title +
+        " " +
         description
-    )
+    ).lower()
+
+
+
+    if any(
+        x in full
+        for x in [
+            "полиция",
+            "дтп",
+            "напал",
+            "нож",
+            "задерж"
+        ]
+    ):
+
+        category = (
+            "🚨 ПРОИСШЕСТВИЯ",
+            "#Происшествия"
+        )
+
+
+    elif any(
+        x in full
+        for x in [
+            "метро",
+            "автобус",
+            "дорог"
+        ]
+    ):
+
+        category = (
+            "🚇 ТРАНСПОРТ",
+            "#Транспорт"
+        )
+
+
+    else:
+
+        category = (
+            "📰 НОВОСТИ МОСКВЫ",
+            "#Новости"
+        )
+
+
 
 
     return f"""
-{category}
+{category[0]}
 
 
-🚨 <b>{title}</b>
+🚨 {title}
 
 
 📍 Москва
@@ -130,5 +224,5 @@ def generate_post(news):
 {link}
 
 
-#{tag.replace("#","")} #Москва
+{category[1]} #Москва
 """.strip()
