@@ -3,7 +3,9 @@ import logging
 import requests
 
 
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+OPENROUTER_KEY = os.getenv(
+    "OPENROUTER_API_KEY"
+)
 
 
 logging.basicConfig(
@@ -11,17 +13,21 @@ logging.basicConfig(
 )
 
 
+
 def generate_post(news):
+
 
     title = news.get(
         "title",
         "Новости Москвы"
     )
 
+
     text = news.get(
         "text",
         ""
     )
+
 
     link = news.get(
         "link",
@@ -29,12 +35,9 @@ def generate_post(news):
     )
 
 
-    # Если нет ключа OpenAI
-    if not OPENAI_KEY:
 
-        logging.warning(
-            "OPENAI_API_KEY не найден, работаем без AI"
-        )
+    if not OPENROUTER_KEY:
+
 
         return f"""
 🚨 <b>{title}</b>
@@ -52,55 +55,56 @@ def generate_post(news):
 
 
     prompt = f"""
-Ты редактор Telegram-канала новостей Москвы.
 
-Сделай короткий пост.
+Ты редактор Telegram канала Москва News.
+
+Переделай новость.
 
 Правила:
-- придумай интересный заголовок
+- короткий интересный заголовок
 - добавь эмодзи
-- не выдумывай факты
-- текст до 700 символов
 - стиль городского новостного канала
+- не придумывай факты
+- до 500 символов
+
 
 Новость:
 
 {title}
 
 {text}
+
 """
+
 
 
     try:
 
+
         response = requests.post(
 
-            "https://api.openai.com/v1/chat/completions",
+
+            "https://openrouter.ai/api/v1/chat/completions",
+
 
             headers={
 
                 "Authorization":
-                f"Bearer {OPENAI_KEY}",
+                f"Bearer {OPENROUTER_KEY}",
 
                 "Content-Type":
                 "application/json"
 
             },
 
+
             json={
 
                 "model":
-                "gpt-4o-mini",
+                "openrouter/free",
+
 
                 "messages":[
-
-                    {
-                        "role":
-                        "system",
-
-                        "content":
-                        "Ты профессиональный редактор новостей."
-                    },
 
                     {
                         "role":
@@ -113,52 +117,49 @@ def generate_post(news):
                 ],
 
                 "temperature":
-                0.6
+                0.7
 
             },
 
-            timeout=40
+
+            timeout=60
 
         )
+
 
 
         data = response.json()
 
 
-        # Проверяем ответ OpenAI
 
         if "choices" not in data:
 
             logging.error(
-                f"OpenAI ошибка: {data}"
+                data
             )
 
-
-            return f"""
-🚨 <b>{title}</b>
-
-📍 Москва
-
-{text}
-
-🔗 Подробнее:
-{link}
-
-#Москва #НовостиМосквы
-""".strip()
+            raise Exception(
+                "AI не вернул ответ"
+            )
 
 
 
         result = (
+
             data["choices"][0]
+
             ["message"]
+
             ["content"]
+
             .strip()
+
         )
 
 
 
         return f"""
+
 {result}
 
 
@@ -167,6 +168,7 @@ def generate_post(news):
 
 
 #Москва #НовостиМосквы
+
 """.strip()
 
 
@@ -174,9 +176,11 @@ def generate_post(news):
     except Exception as e:
 
 
+
         logging.error(
             f"AI ERROR: {e}"
         )
+
 
 
         return f"""
