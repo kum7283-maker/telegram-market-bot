@@ -1,7 +1,5 @@
 import feedparser
-import requests
-
-from bs4 import BeautifulSoup
+import random
 
 
 SOURCES = [
@@ -10,149 +8,41 @@ SOURCES = [
 
     "https://www.m24.ru/rss.xml",
 
-    "https://tass.ru/rss/v2.xml"
+    "https://www.interfax.ru/rss.asp",
 
 ]
 
 
+KEYWORDS = [
 
-MOSCOW_WORDS = [
-
-    "москва",
+    "Москва",
     "москве",
     "москвы",
-    "москвой",
-    "столица",
-    "мэрия",
-    "мосгор",
-    "подмосковье"
-
-]
-
-
-
-IMPORTANT_WORDS = [
-
-    "дтп",
-    "пожар",
-    "полиция",
-    "задерж",
-    "авари",
+    "мэр",
     "метро",
-    "мцд",
-    "мцк",
-    "погода",
-    "снег",
-    "дожд",
-    "строительство"
+    "ДТП",
+    "полиция",
+    "пожар",
+    "погода"
 
 ]
-
-
-
-
-
-def is_moscow_news(text):
-
-
-    text = text.lower()
-
-
-    # Москва обязательно
-
-    if not any(
-        word in text
-        for word in MOSCOW_WORDS
-    ):
-
-        return False
-
-
-
-    return True
-
-
-
-
-
-def get_image(url):
-
-
-    try:
-
-        r = requests.get(
-
-            url,
-
-            timeout=8,
-
-            headers={
-                "User-Agent":
-                "Mozilla/5.0"
-            }
-
-        )
-
-
-        soup = BeautifulSoup(
-
-            r.text,
-
-            "html.parser"
-
-        )
-
-
-        img = soup.find(
-
-            "meta",
-
-            property="og:image"
-
-        )
-
-
-        if img:
-
-            return img.get(
-                "content"
-            )
-
-
-    except:
-
-        pass
-
-
-
-    return None
-
-
-
 
 
 def get_news():
 
 
-    news = []
+    random.shuffle(SOURCES)
 
 
-
-    for source in SOURCES:
+    for url in SOURCES:
 
 
         try:
 
-
-            feed = feedparser.parse(
-
-                source
-
-            )
+            feed = feedparser.parse(url)
 
 
-
-            for item in feed.entries[:20]:
+            for item in feed.entries[:10]:
 
 
                 title = item.get(
@@ -167,85 +57,64 @@ def get_news():
                 )
 
 
-
-                text = (
-
-                    title
-                    +
-                    " "
-                    +
-                    description
-
-                )
+                text = title + " " + description
 
 
-
-                if not is_moscow_news(
-                    text
+                if any(
+                    word.lower() in text.lower()
+                    for word in KEYWORDS
                 ):
 
-                    continue
+
+                    image = None
 
 
+                    if hasattr(
+                        item,
+                        "media_content"
+                    ):
 
-                news.append({
-
-                    "title":
-                    title,
-
-
-                    "text":
-                    description,
-
-
-                    "link":
-                    item.get(
-                        "link",
-                        ""
-                    ),
+                        image = item.media_content[0].get(
+                            "url"
+                        )
 
 
-                    "image":
-                    None
+                    return {
 
-                })
+                        "title": title,
 
+                        "text": description,
+
+                        "link": item.get(
+                            "link",
+                            ""
+                        ),
+
+                        "image": image
+
+                    }
 
 
         except Exception as e:
 
-
             print(
-                "SOURCE ERROR:",
+                "RSS ERROR",
                 e
             )
 
 
+    return {
 
+        "title":
+        "Новости Москвы",
 
+        "text":
+        "Свежие новости города",
 
-    if not news:
+        "link":
+        "",
 
+        "image":
+        None
 
-        raise Exception(
-            "Нет свежих новостей Москвы"
-        )
-
-
-
-
-    # берём случайную из свежих
-
-    result = news[0]
-
-
-
-    result["image"] = get_image(
-
-        result["link"]
-
-    )
-
-
-
-    return result
+    }
