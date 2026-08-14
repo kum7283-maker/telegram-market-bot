@@ -1,5 +1,6 @@
 import os
 import requests
+import html
 
 
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
@@ -7,17 +8,24 @@ OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
 def generate_post(news):
 
-    title = news.get("title", "")
+    title = news.get("title", "Новости Москвы")
     text = news.get("text", "")
     link = news.get("link", "")
 
 
-    # Если ключа нет — обычный пост
+    # очищаем для Telegram
+
+    title = html.escape(title)
+    text = html.escape(text)
+
+
+
+    # Если нет ключа OpenAI
 
     if not OPENAI_KEY:
 
         return f"""
-🚨 <b>{title}</b>
+🚨 {title}
 
 📍 Москва
 
@@ -36,24 +44,17 @@ def generate_post(news):
         prompt = f"""
 Ты редактор Telegram-канала новостей Москвы.
 
-Создай короткий новостной пост.
-
-Правила:
-- придумай интересный заголовок
-- используй эмодзи
-- не выдумывай факты
-- пиши простым языком
-- максимум 5-7 предложений
-
-Новость:
+Перепиши новость:
+- коротко
+- интересно
+- без выдуманных фактов
+- добавь 1-2 эмодзи
 
 Заголовок:
 {title}
 
 Текст:
 {text}
-
-Сделай готовый пост для Telegram.
 """
 
 
@@ -62,11 +63,8 @@ def generate_post(news):
             "https://api.openai.com/v1/chat/completions",
 
             headers={
-
                 "Authorization": f"Bearer {OPENAI_KEY}",
-
                 "Content-Type": "application/json"
-
             },
 
             json={
@@ -74,22 +72,17 @@ def generate_post(news):
                 "model": "gpt-4o-mini",
 
                 "messages": [
-
                     {
-
                         "role": "user",
-
                         "content": prompt
-
                     }
-
                 ],
 
-                "temperature": 0.7
+                "temperature": 0.5
 
             },
 
-            timeout=30
+            timeout=40
 
         )
 
@@ -97,7 +90,23 @@ def generate_post(news):
         data = response.json()
 
 
-        result = data["choices"][0]["message"]["content"]
+        # Проверка ответа OpenAI
+
+        if "choices" not in data:
+
+            print("OPENAI ERROR:", data)
+
+            result = text
+
+
+        else:
+
+            result = data["choices"][0]["message"]["content"]
+
+
+
+        result = html.escape(result)
+
 
 
         return f"""
@@ -118,7 +127,7 @@ def generate_post(news):
 
 
         return f"""
-🚨 <b>{title}</b>
+🚨 {title}
 
 📍 Москва
 
