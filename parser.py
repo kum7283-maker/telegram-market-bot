@@ -1,188 +1,138 @@
 import requests
+import feedparser
 import random
+from bs4 import BeautifulSoup
 
 
-def get_product():
-
-    query = random.choice([
-        "телефон",
-        "наушники",
-        "кроссовки",
-        "робот пылесос",
-        "часы",
-        "товары для дома"
-    ])
-
-    url = "https://search.wb.ru/exactmatch/ru/search/v4/search"
-
-    params = {
-        "ab_testing": "false",
-        "appType": "1",
-        "curr": "rub",
-        "dest": "-1257786",
-        "query": query,
-        "resultset": "catalog",
-        "page": "1",
-        "sort": "popular"
-    }
-
-    headers = {
-        "User-Agent":
-        "Mozilla/5.0",
-        "Accept":
-        "application/json",
-        "Referer":
-        "https://www.wildberries.ru/"
-    }
+# Источники новостей
+SOURCES = [
+    "https://www.mos.ru/rss/news/",
+    "https://tass.ru/rss/v2.xml",
+    "https://ria.ru/export/rss2/archive/index.xml"
+]
 
 
-    try:
-
-        r = requests.get(
-            url,
-            params=params,
-            headers=headers,
-            timeout=20
-        )
-
-
-        print("WB STATUS:", r.status_code)
-        print(r.text[:200])
-
-
-        data = r.json()
+KEYWORDS = [
+    "Москва",
+    "москв",
+    "Московская область",
+    "метро",
+    "МКАД",
+    "МЦК",
+    "транспорт",
+    "улица",
+    "район"
+]
 
 
-        products = data.get(
-            "data",
-            {}
-        ).get(
-            "products",
-            []
-        )
+def check_moscow(text):
+
+    text = text.lower()
+
+    for word in KEYWORDS:
+        if word.lower() in text:
+            return True
+
+    return False
 
 
-        if len(products) == 0:
-            raise Exception(
-                "WB пустой ответ"
+
+def clean_text(text):
+
+    soup = BeautifulSoup(
+        text,
+        "html.parser"
+    )
+
+    return soup.get_text(
+        " ",
+        strip=True
+    )
+
+
+
+def get_news():
+
+    news = []
+
+
+    for source in SOURCES:
+
+        try:
+
+            feed = feedparser.parse(source)
+
+
+            for item in feed.entries[:10]:
+
+                title = item.get(
+                    "title",
+                    ""
+                )
+
+                description = item.get(
+                    "description",
+                    ""
+                )
+
+
+                text = (
+                    title
+                    + " "
+                    + description
+                )
+
+
+                text = clean_text(text)
+
+
+                if check_moscow(text):
+
+                    news.append({
+
+                        "title":
+                        title,
+
+                        "text":
+                        text,
+
+                        "link":
+                        item.get(
+                            "link",
+                            ""
+                        ),
+
+                        "source":
+                        source
+
+                    })
+
+
+        except Exception as e:
+
+            print(
+                "RSS ERROR:",
+                e
             )
 
 
-        p = random.choice(products)
-
-
-        article = p["id"]
-
-        price = p.get(
-            "salePriceU",
-            0
-        ) // 100
-
-        old = p.get(
-            "priceU",
-            0
-        ) // 100
-
-
-        img = (
-            "https://basket-"
-            + str(article // 100000)
-            + ".wbbasket.ru/"
-            "vol"
-            + str(article // 100000)
-            + "/part"
-            + str(article // 1000)
-            + "/"
-            + str(article)
-            + "/images/big/1.webp"
-        )
-
+    if len(news) == 0:
 
         return {
 
-            "market":
-            "🟣 Wildberries",
+            "title":
+            "Новостей нет",
 
-            "article":
-            article,
-
-            "name":
-            p.get("name"),
-
-            "price":
-            f"{price} ₽",
-
-            "old_price":
-            f"{old} ₽",
-
-            "discount":
-            str(
-                p.get(
-                    "sale",
-                    0
-                )
-            ) + "%",
-
-            "rating":
-            str(
-                p.get(
-                    "rating",
-                    0
-                )
-            ),
-
-            "reviews":
-            str(
-                p.get(
-                    "feedbacks",
-                    0
-                )
-            ),
+            "text":
+            "Новости Москвы не найдены",
 
             "link":
-            f"https://www.wildberries.ru/catalog/{article}/detail.aspx",
+            "",
 
-            "image":
-            img
+            "source":
+            ""
+
         }
 
 
-    except Exception as e:
-
-        print(
-            "WB ERROR:",
-            e
-        )
-
-        return {
-
-            "market":
-            "🟣 Wildberries",
-
-            "article":
-            "0",
-
-            "name":
-            "Ошибка WB",
-
-            "price":
-            "0 ₽",
-
-            "old_price":
-            "0 ₽",
-
-            "discount":
-            "0%",
-
-            "rating":
-            "0",
-
-            "reviews":
-            "0",
-
-            "link":
-            "https://www.wildberries.ru",
-
-            "image":
-            None
-        }
+    return random.choice(news)
