@@ -1,16 +1,22 @@
 import os
 import logging
 
+
 from telegram import Update
+
 from telegram.ext import (
     Application,
     CommandHandler,
     ContextTypes
 )
 
-from parser import get_product
+
+from parser import get_news
+
 from ai_writer import generate_post
+
 from db import init_db, save_post
+
 
 
 logging.basicConfig(
@@ -18,326 +24,204 @@ logging.basicConfig(
 )
 
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_ID = os.getenv("CHANNEL_ID")
+
+BOT_TOKEN=os.getenv(
+    "BOT_TOKEN"
+)
 
 
-# =========================
-# START
-# =========================
+CHANNEL_ID=os.getenv(
+    "CHANNEL_ID"
+)
+
+
+
 
 async def start(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+    update:Update,
+    context:ContextTypes.DEFAULT_TYPE
 ):
 
     await update.message.reply_text(
-        "🤖 WB × OZON НАХОДКИ\n\n"
-        "/post — опубликовать товар\n"
-        "/test — проверить канал\n"
-        "/status — проверить состояние"
+        "📰 Москва News Bot работает"
     )
 
 
-# =========================
-# STATUS
-# =========================
 
-async def status(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+
+
+async def publish(
+    context,
+    news
 ):
 
-    await update.message.reply_text(
-        "🟢 Бот работает\n"
-        f"📢 Канал: {CHANNEL_ID}"
+
+    text = generate_post(
+        news
     )
 
 
-# =========================
-# TEST
-# =========================
-
-async def test(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-
-    try:
-
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text="✅ Тестовая публикация работает"
-        )
-
-        await update.message.reply_text(
-            "✅ Тест отправлен в канал"
-        )
-
-    except Exception as e:
-
-        logging.error(e)
-
-        await update.message.reply_text(
-            f"❌ Ошибка отправки в канал:\n{e}"
-        )
+    image = news.get(
+        "image"
+    )
 
 
-# =========================
-# ОТПРАВКА ТОВАРА
-# =========================
+    if image:
 
-async def send_product(
-    context: ContextTypes.DEFAULT_TYPE,
-    product: dict
-):
-
-    text = generate_post(product)
-
-    video = product.get("video")
-    image = product.get("image")
-
-
-    # =========================
-    # ЕСЛИ ЕСТЬ ВИДЕО
-    # =========================
-
-    if video:
-
-        try:
-
-            await context.bot.send_video(
-                chat_id=CHANNEL_ID,
-                video=video,
-                caption=text
-            )
-
-            logging.info(
-                "Видео товара опубликовано"
-            )
-
-        except Exception as e:
-
-            logging.error(
-                f"Ошибка отправки видео: {e}"
-            )
-
-            # если видео не загрузилось,
-            # пробуем отправить фото
-
-            if image:
-
-                await context.bot.send_photo(
-                    chat_id=CHANNEL_ID,
-                    photo=image,
-                    caption=text
-                )
-
-            else:
-
-                await context.bot.send_message(
-                    chat_id=CHANNEL_ID,
-                    text=text
-                )
-
-
-    # =========================
-    # ЕСЛИ ЕСТЬ ФОТО
-    # =========================
-
-    elif image:
 
         await context.bot.send_photo(
+
             chat_id=CHANNEL_ID,
+
             photo=image,
-            caption=text
+
+            caption=text,
+
+            parse_mode="HTML"
+
         )
 
-        logging.info(
-            "Фото товара опубликовано"
-        )
-
-
-    # =========================
-    # ЕСЛИ НЕТ МЕДИА
-    # =========================
 
     else:
 
+
         await context.bot.send_message(
+
             chat_id=CHANNEL_ID,
-            text=text
+
+            text=text,
+
+            parse_mode="HTML"
+
         )
 
-        logging.info(
-            "Товар опубликован без медиа"
-        )
+
+    save_post(
+        text
+    )
 
 
-    # сохраняем текст поста
-    save_post(text)
 
 
-# =========================
-# РУЧНОЙ POST
-# =========================
 
 async def post(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+    update,
+    context
 ):
 
-    try:
 
-        product = get_product()
-
-        await send_product(
-            context,
-            product
-        )
-
-        await update.message.reply_text(
-            "🔥 Товар опубликован в канал"
-        )
-
-    except Exception as e:
-
-        logging.error(
-            f"Post error: {e}"
-        )
-
-        await update.message.reply_text(
-            f"❌ Ошибка:\n{e}"
-        )
+    news=get_news()
 
 
-# =========================
-# АВТОПОСТ
-# =========================
+    await publish(
+        context,
+        news
+    )
+
+
+    await update.message.reply_text(
+        "✅ Новость опубликована"
+    )
+
+
+
+
 
 async def auto_post(
-    context: ContextTypes.DEFAULT_TYPE
+    context
 ):
+
 
     try:
 
-        product = get_product()
+        news=get_news()
 
-        await send_product(
+        await publish(
             context,
-            product
+            news
         )
 
-        logging.info(
-            "✅ Автоматический пост опубликован"
+
+        print(
+            "NEWS OK"
         )
+
 
     except Exception as e:
 
-        logging.error(
-            f"Auto post error: {e}"
+
+        print(
+            e
         )
 
 
-# =========================
-# MAIN
-# =========================
+
+
 
 def main():
+
 
     init_db()
 
 
-    if not BOT_TOKEN:
+    app=(
 
-        raise ValueError(
-            "Не найдена переменная BOT_TOKEN"
-        )
-
-
-    if not CHANNEL_ID:
-
-        raise ValueError(
-            "Не найдена переменная CHANNEL_ID"
-        )
-
-
-    app = (
         Application
+
         .builder()
-        .token(BOT_TOKEN)
+
+        .token(
+            BOT_TOKEN
+        )
+
         .build()
+
     )
 
 
-    # Команды
-
     app.add_handler(
+
         CommandHandler(
             "start",
             start
         )
+
     )
 
 
     app.add_handler(
-        CommandHandler(
-            "status",
-            status
-        )
-    )
 
-
-    app.add_handler(
-        CommandHandler(
-            "test",
-            test
-        )
-    )
-
-
-    app.add_handler(
         CommandHandler(
             "post",
             post
         )
+
     )
 
 
-    # =========================
-    # АВТОПУБЛИКАЦИЯ
-    # =========================
-    #
-    # Первый пост через 60 секунд
-    # Далее каждые 2 часа
-    #
 
-    if app.job_queue:
+    app.job_queue.run_repeating(
 
-        app.job_queue.run_repeating(
-            auto_post,
-            interval=7200,
-            first=60
-        )
+        auto_post,
 
-    else:
+        interval=1800,
 
-        logging.warning(
-            "JobQueue недоступен. "
-            "Проверь python-telegram-bot[job-queue]"
-        )
+        first=60
+
+    )
 
 
-    print("🤖 BOT STARTED")
+
+    print(
+        "MOSCOW NEWS START"
+    )
 
 
     app.run_polling()
 
 
-# =========================
-# START PROGRAM
-# =========================
 
-if __name__ == "__main__":
+
+if __name__=="__main__":
 
     main()
