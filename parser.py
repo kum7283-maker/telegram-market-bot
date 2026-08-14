@@ -1,43 +1,50 @@
-import requests
 import feedparser
 import random
+import requests
 from bs4 import BeautifulSoup
 
 
-# Источники новостей
 SOURCES = [
+
     "https://www.mos.ru/rss/news/",
-    "https://tass.ru/rss/v2.xml",
-    "https://ria.ru/export/rss2/archive/index.xml"
+
+    "https://ria.ru/export/rss2/archive/index.xml",
+
+    "https://tass.ru/rss/v2.xml"
+
 ]
 
 
 KEYWORDS = [
+
     "Москва",
     "москв",
-    "Московская область",
     "метро",
     "МКАД",
     "МЦК",
     "транспорт",
     "улица",
     "район"
+
 ]
 
 
-def check_moscow(text):
+
+def is_moscow(text):
 
     text = text.lower()
 
     for word in KEYWORDS:
+
         if word.lower() in text:
+
             return True
 
     return False
 
 
 
-def clean_text(text):
+def clean(text):
 
     soup = BeautifulSoup(
         text,
@@ -51,24 +58,57 @@ def clean_text(text):
 
 
 
+def get_image(entry):
+
+    try:
+
+        if "media_content" in entry:
+
+            return entry.media_content[0]["url"]
+
+
+        if "media_thumbnail" in entry:
+
+            return entry.media_thumbnail[0]["url"]
+
+
+        if "enclosures" in entry:
+
+            return entry.enclosures[0]["url"]
+
+
+    except:
+
+        pass
+
+
+    return None
+
+
+
+
 def get_news():
 
-    news = []
+
+    news_list = []
 
 
-    for source in SOURCES:
+    for url in SOURCES:
+
 
         try:
 
-            feed = feedparser.parse(source)
+            feed = feedparser.parse(url)
 
 
             for item in feed.entries[:10]:
+
 
                 title = item.get(
                     "title",
                     ""
                 )
+
 
                 description = item.get(
                     "description",
@@ -76,25 +116,21 @@ def get_news():
                 )
 
 
-                text = (
-                    title
-                    + " "
-                    + description
+                text = clean(
+                    title +
+                    " " +
+                    description
                 )
 
 
-                text = clean_text(text)
+                if is_moscow(text):
 
 
-                if check_moscow(text):
+                    news_list.append({
 
-                    news.append({
+                        "title": title,
 
-                        "title":
-                        title,
-
-                        "text":
-                        text,
+                        "text": text,
 
                         "link":
                         item.get(
@@ -102,8 +138,8 @@ def get_news():
                             ""
                         ),
 
-                        "source":
-                        source
+                        "image":
+                        get_image(item)
 
                     })
 
@@ -111,28 +147,33 @@ def get_news():
         except Exception as e:
 
             print(
-                "RSS ERROR:",
+                "SOURCE ERROR:",
                 e
             )
 
 
-    if len(news) == 0:
+
+    if not news_list:
+
 
         return {
 
             "title":
-            "Новостей нет",
+            "Новости Москвы",
 
             "text":
-            "Новости Москвы не найдены",
+            "Новых новостей нет",
 
             "link":
             "",
 
-            "source":
-            ""
+            "image":
+            None
 
         }
 
 
-    return random.choice(news)
+
+    return random.choice(
+        news_list
+    )
