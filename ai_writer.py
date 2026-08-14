@@ -1,14 +1,17 @@
 def generate_post(news):
 
+
     title = news.get(
         "title",
-        "Новости Москвы"
+        "Москва"
     )
+
 
     text = news.get(
         "text",
         ""
     )
+
 
     link = news.get(
         "link",
@@ -17,7 +20,8 @@ def generate_post(news):
 
 
     return f"""
-🚨 **{title}**
+
+🚨 <b>{title}</b>
 
 
 📍 Москва
@@ -30,5 +34,6 @@ def generate_post(news):
 {link}
 
 
-#Москва #НовостиМосква #МоскваСейчас
+#Москва #НовостиМосква
+
 """.strip()
