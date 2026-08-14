@@ -1,4 +1,5 @@
 python-telegram-bot[job-queue]
+telethon
 feedparser
 beautifulsoup4
 requests
